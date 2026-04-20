@@ -30,8 +30,8 @@
   /* Semantic colors */
   --green:#39d353;           /* receita líquida, positivo */
   --green-dk:#2da44e;        /* delta positivo */
-  --green-uber1:#1a7f37;     /* uber order fee */
-  --green-uber2:#2da44e;     /* uber tips */
+  --green-uber1:#3d5a2e;     /* uber order fee - verde musgo escuro */
+  --green-uber2:#6b8a4e;     /* uber tips - verde musgo médio */
   --red:#f85149;             /* não atingiu */
   --wine:#8b1a2f;            /* delta negativo */
   --blue:#58a6ff;            /* receita bruta */
@@ -166,12 +166,9 @@ body{min-height:100vh;padding-bottom:80px;}
 .plat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
 .plat-row:last-child{margin-bottom:0;}
 .plat-lbl{font-size:10px;color:var(--text3);font-weight:500;}
-.plat-v{font-size:11px;font-family:var(--mono);font-weight:600;}
-.plat-v.money-del1{color:var(--blue-del1);}
-.plat-v.money-del2{color:var(--blue-del2);}
-.plat-v.money-del3{color:var(--blue-del3);}
-.plat-v.money-uber1{color:var(--green-uber1);}
-.plat-v.money-uber2{color:var(--green-uber2);}
+.plat-v{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--text);}
+.plat-v.money-del1,.plat-v.money-del2,.plat-v.money-del3,
+.plat-v.money-uber1,.plat-v.money-uber2{color:var(--text);}
 .plat-v.neutral{color:var(--text2);}
 
 /* ==================== LÍQUIDO + DESCONTOS ==================== */
@@ -384,17 +381,13 @@ table.show-deltas tbody td.delta-col{display:table-cell;}
     </div>
     <div class="hero-lbl">Receita bruta do dia</div>
     <div class="hero-val" id="h-total"><span>€</span>—</div>
+    <div class="k-delta nt" id="h-total-d" style="margin-top:-4px;margin-bottom:10px;">—</div>
     <div class="meta-row">
       <div class="meta-pct" id="h-meta-pct">—</div>
       <div class="meta-bar"><div class="meta-fill" id="h-meta-fill" style="width:0%"></div></div>
       <div class="meta-lbl" id="h-meta-lbl">meta</div>
     </div>
     <div class="meta-status nt" id="h-meta-status">—</div>
-    <div class="comp-row">
-      <div class="comp-icon">🎯</div>
-      <div class="comp-txt" id="comp-meta-txt">—</div>
-      <div class="comp-delta nt" id="comp-meta-delta">—</div>
-    </div>
     <div class="comp-row">
       <div class="comp-icon">📊</div>
       <div class="comp-txt" id="comp-hist-txt">—</div>
@@ -405,9 +398,10 @@ table.show-deltas tbody td.delta-col{display:table-cell;}
   <div class="stitle">Números do dia</div>
   <div class="kgrid">
     <div class="kitem"><div class="k-lbl">Fee / hora</div><div class="k-val" id="h-fh">—</div><div class="k-delta nt" id="h-fh-d">—</div></div>
+    <div class="kitem"><div class="k-lbl">Fee / pedido</div><div class="k-val" id="h-fp">—</div><div class="k-delta nt" id="h-fp-d">—</div></div>
     <div class="kitem"><div class="k-lbl">Horas trabalhadas</div><div class="k-val" id="h-horas">—</div><div class="k-delta nt" id="h-horas-d">—</div></div>
-    <div class="kitem"><div class="k-lbl">Pedidos</div><div class="k-val" id="h-orders">—</div><div class="k-delta nt" id="h-orders-d">—</div></div>
     <div class="kitem"><div class="k-lbl">Pedido / hora</div><div class="k-val" id="h-ph">—</div><div class="k-delta nt" id="h-ph-d">—</div></div>
+    <div class="kitem" style="grid-column:1 / -1;"><div class="k-lbl">Pedidos</div><div class="k-val" id="h-orders">—</div><div class="k-delta nt" id="h-orders-d">—</div></div>
   </div>
 
   <div class="stitle">Composição da receita do dia</div>
@@ -816,8 +810,7 @@ function mkChart(id,cfg){
 // Status binário: atingiu (≥100%) ou não atingiu (<100%)
 function metaStatus(pct){
   if(pct>=100) return {text:'✓ Meta atingida',cls:'g'};
-  if(pct>=95) return {text:'✓ Meta praticamente atingida',cls:'g'};
-  if(pct>=75) return {text:'⚠ Meta parcialmente atingida',cls:'a'};
+  if(pct>=75) return {text:'⚠ Meta quase atingida',cls:'a'};
   return {text:'✕ Meta não atingida',cls:'r'};
 }
 
@@ -1082,18 +1075,19 @@ function renderDiario(){
     statusEl.className='meta-status nt';
   }
 
-  // Comparativos
-  const metaTxt=document.getElementById('comp-meta-txt');
-  const metaDelta=document.getElementById('comp-meta-delta');
-  metaTxt.innerHTML=`<b>Meta de ${DNs_FULL[dowIdx]}: €${metaDia}</b>`;
+  // Delta vs meta logo abaixo da receita bruta (padrão KPI)
+  const totalD=document.getElementById('h-total-d');
   if(total>0){
     const diff=total-metaDia;
-    const pct=(diff/metaDia*100).toFixed(0);
-    metaDelta.textContent=(diff>=0?'+':'-')+`€${Math.abs(diff).toFixed(0)} (${diff>=0?'+':''}${pct}%)`;
-    metaDelta.className='comp-delta '+(diff>=0?'up':'dn');
+    const pctM=(diff/metaDia*100).toFixed(0);
+    const arrow=diff>=0?'↑':'↓';
+    totalD.textContent=`${arrow} ${diff>=0?'+':'-'}€${Math.abs(diff).toFixed(0)} (${diff>=0?'+':''}${pctM}%) vs meta €${metaDia}`;
+    totalD.className='k-delta '+(diff>=0?'up':'dn');
+    totalD.style.marginTop='-4px';totalD.style.marginBottom='10px';
   } else {
-    metaDelta.textContent='sem dados';
-    metaDelta.className='comp-delta nt';
+    totalD.textContent='sem dados';
+    totalD.className='k-delta nt';
+    totalD.style.marginTop='-4px';totalD.style.marginBottom='10px';
   }
 
   const histSameDay=gRaw.filter(d=>d.worked&&d.date.getDay()===dowIdx&&(d.dateKey||localDateKey(d.date))!==dateStr);
@@ -1130,11 +1124,15 @@ function renderDiario(){
   }
   const pv=k=>prevWorked?prevWorked[k]:NaN;
   setKpi('h-fh','h-fh-d',hasData?r.feehora:NaN,pv('feehora'),fe);
+  // Fee / pedido = receita total / número de pedidos
+  const fp=hasData&&!isNaN(r.total)&&!isNaN(r.orders)&&r.orders>0?r.total/r.orders:NaN;
+  const fpv=prevWorked&&!isNaN(prevWorked.total)&&!isNaN(prevWorked.orders)&&prevWorked.orders>0?prevWorked.total/prevWorked.orders:NaN;
+  setKpi('h-fp','h-fp-d',fp,fpv,fe);
   setKpi('h-horas','h-horas-d',hasData?r.horas:NaN,pv('horas'),fh);
   setKpi('h-orders','h-orders-d',hasData?r.orders:NaN,pv('orders'),v=>isNaN(v)?'—':Math.round(v)+'');
   const ph=hasData&&!isNaN(r.orders)&&!isNaN(r.horas)&&r.horas>0?r.orders/r.horas:NaN;
   const ppv=prevWorked&&!isNaN(prevWorked.orders)&&!isNaN(prevWorked.horas)&&prevWorked.horas>0?prevWorked.orders/prevWorked.horas:NaN;
-  setKpi('h-ph','h-ph-d',ph,ppv,v=>isNaN(v)?'—':v.toFixed(2)+'/h');
+  setKpi('h-ph','h-ph-d',ph,ppv,v=>isNaN(v)?'—':v.toFixed(1)+'/h');
 
   // Donut composição da receita
   renderDiarioCompose(r, hasData, total);
@@ -1323,6 +1321,54 @@ function renderMini10Days(selDate){
         x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false,maxRotation:0,font:{size:8,family:'JetBrains Mono'}}},
         y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}
       }}});
+
+  // Tooltip toggle: touch fora do canvas OU segundo toque na mesma área esconde
+  setupTooltipToggle('mini-days');
+}
+
+// Helper global: toggle tooltip on touch/click
+function setupTooltipToggle(chartId){
+  const canvas=document.getElementById(chartId);
+  const ch=charts[chartId];
+  if(!canvas||!ch) return;
+  // Remove listeners anteriores (caso re-render)
+  if(canvas._ttCleanup) canvas._ttCleanup();
+  let lastIdx=-1;
+  const onTouch=(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const pt=e.touches?e.touches[0]:e;
+    const x=pt.clientX-rect.left;
+    const els=ch.getElementsAtEventForMode({x,y:pt.clientY-rect.top},'index',{intersect:false},false);
+    if(els.length===0) return;
+    const idx=els[0].index;
+    if(idx===lastIdx){
+      // segundo toque na mesma barra → esconde
+      ch.setActiveElements([]);
+      ch.tooltip.setActiveElements([],{x:0,y:0});
+      ch.update();
+      lastIdx=-1;
+    } else {
+      lastIdx=idx;
+    }
+  };
+  const onOutside=(e)=>{
+    if(!canvas.contains(e.target)){
+      ch.setActiveElements([]);
+      ch.tooltip.setActiveElements([],{x:0,y:0});
+      ch.update();
+      lastIdx=-1;
+    }
+  };
+  canvas.addEventListener('touchend',onTouch);
+  canvas.addEventListener('click',onTouch);
+  document.addEventListener('touchend',onOutside,true);
+  document.addEventListener('click',onOutside,true);
+  canvas._ttCleanup=()=>{
+    canvas.removeEventListener('touchend',onTouch);
+    canvas.removeEventListener('click',onTouch);
+    document.removeEventListener('touchend',onOutside,true);
+    document.removeEventListener('click',onOutside,true);
+  };
 }
 
 // ========== ABA SEMANA ==========
@@ -1457,17 +1503,21 @@ function renderSemana(){
         x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
         y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}}}});
 
-  // Eficiência — barras duplas (bruto + líquido) com média histórica
+  // Eficiência — linhas duplas (bruto + líquido) com média histórica
   const last8=gW.slice(-8);
   const avgFhBruto=last8.reduce((s,w)=>s+(isNaN(w.feehora)?0:w.feehora),0)/last8.filter(w=>!isNaN(w.feehora)).length;
 
-  mkChart('w-eff-chart',{type:'bar',
+  mkChart('w-eff-chart',{type:'line',
     data:{labels:last8.map(w=>w.label),datasets:[
       {label:'Fee/h bruto',data:last8.map(w=>isNaN(w.feehora)?null:parseFloat(w.feehora.toFixed(2))),
-        backgroundColor:'rgba(88,166,255,0.6)',borderColor:C.blue,borderWidth:1.5,borderRadius:3,order:3},
+        borderColor:C.blue,backgroundColor:'rgba(88,166,255,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.blue,pointBorderColor:C.blue,
+        tension:0.25,fill:false,order:3,spanGaps:true},
       {label:'Fee/h líquido',data:last8.map(w=>isNaN(w.feehoraLiq)?null:parseFloat(w.feehoraLiq.toFixed(2))),
-        backgroundColor:'rgba(57,211,83,0.6)',borderColor:C.green,borderWidth:1.5,borderRadius:3,order:2},
-      {type:'line',label:'Média histórica',data:last8.map(()=>parseFloat(avgFhBruto.toFixed(2))),
+        borderColor:C.green,backgroundColor:'rgba(57,211,83,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.green,pointBorderColor:C.green,
+        tension:0.25,fill:false,order:2,spanGaps:true},
+      {label:'Média histórica',data:last8.map(()=>parseFloat(avgFhBruto.toFixed(2))),
         borderColor:C.purple,backgroundColor:'transparent',
         borderWidth:2,borderDash:[3,3],pointRadius:0,tension:0,order:1}
     ]},
@@ -1581,22 +1631,40 @@ function renderMes(){
         x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,maxTicksLimit:10,autoSkip:true}},
         y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v}}}}});
 
-  // Semanas do mês
-  const mWeeks=gW.filter(w=>{
-    const wMon=new Date(w.monday);
-    const wSun=new Date(wMon.getTime()+6*864e5);
-    return (wMon.getFullYear()===yy&&wMon.getMonth()===(mm-1))||
-           (wSun.getFullYear()===yy&&wSun.getMonth()===(mm-1));
-  });
-  const weekColors=mWeeks.map(w=>barColorBinary(w.receita,META_SEM));
+  // Semanas do mês — inclui TODAS as semanas do mês (futuras em branco)
+  // Calcula todas as segundas-feiras que representam semanas que tocam o mês selecionado
+  const firstDayMonth=new Date(yy,mm-1,1);
+  const lastDayMonth=new Date(yy,mm,0);
+  // Primeira segunda-feira cuja semana toca o mês
+  const firstMon=getMon(firstDayMonth);
+  // Última segunda-feira cuja semana toca o mês
+  const lastMon=getMon(lastDayMonth);
+  const allMonWeeks=[];
+  let cur=new Date(firstMon);
+  while(cur<=lastMon){
+    const monKey=localDateKey(cur);
+    const existing=gW.find(w=>localDateKey(new Date(w.monday))===monKey);
+    if(existing){
+      allMonWeeks.push({label:existing.label,receita:existing.receita,hasData:true,monday:new Date(cur)});
+    } else {
+      // Semana futura ou sem dados — monta label manualmente
+      const sun=new Date(cur.getTime()+6*864e5);
+      const lbl=cur.getMonth()===sun.getMonth()
+        ?`${cur.getDate()}–${sun.getDate()} ${MTHS[cur.getMonth()]}`
+        :`${cur.getDate()} ${MTHS[cur.getMonth()]}–${sun.getDate()} ${MTHS[sun.getMonth()]}`;
+      allMonWeeks.push({label:lbl,receita:null,hasData:false,monday:new Date(cur)});
+    }
+    cur=new Date(cur.getTime()+7*864e5);
+  }
+  const weekColors=allMonWeeks.map(w=>w.hasData?barColorBinary(w.receita,META_SEM):{bg:'rgba(110,119,129,0.15)',bd:'rgba(110,119,129,0.3)'});
 
   mkChart('m-weeks-chart',{type:'bar',
-    data:{labels:mWeeks.map(w=>w.label),datasets:[
-      {label:'Receita',data:mWeeks.map(w=>parseFloat(w.receita.toFixed(2))),
+    data:{labels:allMonWeeks.map(w=>w.label),datasets:[
+      {label:'Receita',data:allMonWeeks.map(w=>w.hasData?parseFloat(w.receita.toFixed(2)):null),
         backgroundColor:weekColors.map(c=>c.bg),
         borderColor:weekColors.map(c=>c.bd),
         borderWidth:1.5,borderRadius:4,order:2},
-      {type:'line',label:'Meta semanal',data:Array(mWeeks.length).fill(META_SEM),
+      {type:'line',label:'Meta semanal',data:Array(allMonWeeks.length).fill(META_SEM),
         borderColor:C.amber,backgroundColor:'transparent',
         borderWidth:2,borderDash:[5,4],pointRadius:0,order:1}
     ]},
@@ -1605,7 +1673,13 @@ function renderMes(){
         legend:{display:true,position:'top',align:'end',labels:{...baseLegend,
           filter:item=>item.text==='Meta semanal'}},
         tooltip:{...baseTooltip,mode:'index',intersect:false,
-          callbacks:{label:ctx=>ctx.datasetIndex===0?' receita: €'+ctx.raw.toFixed(2):' meta: €'+META_SEM}}},
+          callbacks:{label:ctx=>{
+            const w=allMonWeeks[ctx.dataIndex];
+            if(ctx.datasetIndex===0){
+              return w.hasData?' receita: €'+ctx.raw.toFixed(2):' semana ainda não realizada';
+            }
+            return ' meta: €'+META_SEM;
+          }}}},
       scales:{...bO.scales,
         x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,autoSkip:false}},
         y:{...bO.scales.y,beginAtZero:true,ticks:{...bO.scales.y.ticks,callback:v=>'€'+v.toFixed(0)}}}}});
@@ -1655,12 +1729,18 @@ function renderHistorico(){
           grid:{display:false}}
       }}});
 
-  // Gráfico fee/hora
-  mkChart('hist-feehora',{type:'bar',
+  // Gráfico fee/hora — linhas duplas (bruto + líquido) com média histórica
+  mkChart('hist-feehora',{type:'line',
     data:{labels:gW.map(w=>w.label),datasets:[
-      {label:'Fee/hora',data:gW.map(w=>isNaN(w.feehora)?null:parseFloat(w.feehora.toFixed(2))),
-        backgroundColor:'rgba(88,166,255,0.55)',borderColor:C.blue,borderWidth:1.5,borderRadius:3,order:2},
-      {type:'line',label:'Média histórica',data:gW.map(()=>parseFloat(avgFh.toFixed(2))),
+      {label:'Fee/h bruto',data:gW.map(w=>isNaN(w.feehora)?null:parseFloat(w.feehora.toFixed(2))),
+        borderColor:C.blue,backgroundColor:'rgba(88,166,255,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.blue,pointBorderColor:C.blue,
+        tension:0.25,fill:false,order:3,spanGaps:true},
+      {label:'Fee/h líquido',data:gW.map(w=>isNaN(w.feehoraLiq)?null:parseFloat(w.feehoraLiq.toFixed(2))),
+        borderColor:C.green,backgroundColor:'rgba(57,211,83,0.1)',
+        borderWidth:2.5,pointRadius:3,pointBackgroundColor:C.green,pointBorderColor:C.green,
+        tension:0.25,fill:false,order:2,spanGaps:true},
+      {label:'Média histórica',data:gW.map(()=>parseFloat(avgFh.toFixed(2))),
         borderColor:C.purple,backgroundColor:'transparent',
         borderWidth:2,borderDash:[3,3],pointRadius:0,order:1}
     ]},
